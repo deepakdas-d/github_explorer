@@ -5,6 +5,7 @@ import '../../providers/github_user_provider.dart';
 import '../../providers/recent_searches_provider.dart';
 import '../../widgets/shared/loading_view.dart';
 import '../../widgets/shared/error_view.dart';
+import '../history/history_screen.dart';
 import '../repositories/repositories_screen.dart';
 import 'widgets/recent_search_chips.dart';
 import 'widgets/user_profile_card.dart';
@@ -45,13 +46,29 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final searchedUsername = ref.watch(searchedUsernameProvider);
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history, color: Color(0xFF0A0A0A)),
+            onPressed: () async {
+              final result = await Navigator.of(context).push<String>(
+                MaterialPageRoute(builder: (_) => const HistoryScreen()),
+              );
+              if (result != null && result.isNotEmpty) {
+                _submitSearch(result);
+              }
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
               const Text(
                 'GitHub Explorer',
                 style: TextStyle(
@@ -63,10 +80,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               const SizedBox(height: 6),
               const Text(
                 'Search for any GitHub user',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF9A9CA3),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF9A9CA3)),
               ),
               const SizedBox(height: 20),
               // Search field — white pill with shadow
@@ -96,12 +110,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       Icons.search,
                       color: Color(0xFF9A9CA3),
                     ),
-                    suffixIcon: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                      onPressed: _submitSearch,
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.clear,
+                            color: Color(0xFF9A9CA3),
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            _controller.clear();
+                            ref.read(searchedUsernameProvider.notifier).state =
+                                null;
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Color(0xFF0A0A0A),
+                          ),
+                          onPressed: () => _submitSearch(),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
@@ -112,9 +144,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              RecentSearchChips(
-                onTap: (username) => _submitSearch(username),
-              ),
+              RecentSearchChips(onTap: (username) => _submitSearch(username)),
               const SizedBox(height: 16),
               // Results area
               Expanded(
@@ -125,9 +155,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         onViewRepos: (username) {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => RepositoriesScreen(
-                                username: username,
-                              ),
+                              builder: (_) =>
+                                  RepositoriesScreen(username: username),
                             ),
                           );
                         },
@@ -158,10 +187,7 @@ class _IdleView extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Search for a GitHub user to get started',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -173,10 +199,7 @@ class _UserResultView extends ConsumerWidget {
   final String username;
   final void Function(String username) onViewRepos;
 
-  const _UserResultView({
-    required this.username,
-    required this.onViewRepos,
-  });
+  const _UserResultView({required this.username, required this.onViewRepos});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
